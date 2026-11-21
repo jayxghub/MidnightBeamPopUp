@@ -2,7 +2,7 @@
 
 An experimental, unofficial addon to [MidnightBeam](https://github.com/MadeinTaly/midnightbeam), adding **D-pad-friendly floating filter controls** and **saveable/renameable/deletable named presets**. It is designed to be opened through [Stickman](https://github.com/MohamedNofal/stickman) while streaming.
 
-**Status:** The GitHub Actions build passed on 21 November 2026. Actual operation on a Fire TV Stick has **not yet been device-tested**.
+**Status:** Original popup was confirmed working on a Fire TV Stick (Android 9, ARMv7) on 21 November 2026. The newer right-hand panel and Stickman launcher fix have compiled successfully; their on-device behaviour still needs testing.
 
 ## Download APK
 
@@ -19,7 +19,9 @@ Open [GitHub Actions](https://github.com/jayxghub/MidnightBeamPopUp/actions/work
 appops set dev.midnightbeam SYSTEM_ALERT_WINDOW allow
 ```
 
-- Open **MidnightBeam Quick**, grant necessary app permissions, and assign that launcher to a Stickman long-press. Use D-pad and OK; Back closes the popup. The main MidnightBeam filter still works.
+- **v2 launcher fix:** Stickman's app list will normally contain **one app per package**, so the only home/Stickman launcher is now **MidnightBeam Quick** (it launches the floating controls). The original full settings are still available using **Full settings** inside the popup, or by ADB: `am start -n dev.midnightbeam/.MainActivity`.
+- **v2 layout:** floating controls are positioned at the right edge, about 28% of the display width, with scrollable, D-pad-focused presets and sliders.
+- Open the app in Stickman and assign it to your chosen long-press. Press Back to dismiss. Stickman may need restarting to refresh its app list.
 
 ## Build
 
@@ -29,5 +31,6 @@ The workflow clones upstream and applies the addon with `apply_to_upstream.py`, 
 
 - This is a prototype, not affiliated with the original developer.
 - Presets are stored in separate SharedPreferences within the fork. They are not synchronized with MidnightBeam phone-web scenes.
+- **Important for upgrading between test builds:** Each default GitHub Actions build generates a fresh signing key, meaning you must uninstall the prior test build before installing the new one (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Uninstalling erases locally saved presets. A persistent private signing key is required to fix this for future builds.
 - Certain streaming apps or Fire OS versions may interrupt playback when the shortcut launches or may restrict focus in overlay windows; testing is required.
 - Future upstream changes may require adjustments to the patch script or code.
