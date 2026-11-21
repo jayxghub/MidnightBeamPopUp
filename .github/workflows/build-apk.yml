@@ -18,10 +18,10 @@ jobs:
     steps:
       - name: Check out addon
         uses: actions/checkout@v4
-      - name: Configure Android SDK
-        uses: android-actions/setup-android@v3
       - name: Install SDK platform and tools
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          echo "Android SDK: $ANDROID_HOME"
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Clone MidnightBeam including submodules
         run: git clone --depth 1 --recurse-submodules https://github.com/MadeinTaly/midnightbeam.git upstream
       - name: Add floating popup to MidnightBeam
