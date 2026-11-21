@@ -46,6 +46,32 @@ if '.QuickPopupActivity' not in s:
     if '</application>' not in s:
         raise SystemExit('Could not locate </application> in manifest')
     s = s.replace('</application>', declaration + '\n    </application>', 1)
+# Stickman exposes one "Open an app" target per package. Make Quick Popup the
+# ONLY launcher for this package; the original MainActivity remains available
+# via the "Full settings" button in the popup and through explicit ADB launches.
+main_match = re.search(
+    r'<activity\\b[^>]*android:name="\\.MainActivity"[^>]*>[\\s\\S]*?</activity>',
+    s
+)
+if not main_match:
+    raise SystemExit('Could not locate MainActivity in upstream manifest')
+main_activity = main_match.group(0)
+def remove_main_launcher(match):
+    tag = match.group(0)
+    if ('android.intent.action.MAIN' in tag and
+            ('android.intent.category.LAUNCHER' in tag or
+             'android.intent.category.LEANBACK_LAUNCHER' in tag)):
+        return ''
+    return tag
+cleaned = re.sub(r'\\s*<intent-filter\\b[^>]*>[\\s\\S]*?</intent-filter>',
+                 remove_main_launcher, main_activity)
+if cleaned == main_activity:
+    raise SystemExit('Expected MainActivity launcher intent-filter was not found')
+s = s[:main_match.start()] + cleaned + s[main_match.end():]
+# Give Stickman's package-level app list an unambiguous quick-controls name.
+s = s.replace('android:label="MidnightBeam"',
+              'android:label="MidnightBeam Quick"', 1)
+
 if 'android.permission.FOREGROUND_SERVICE_SPECIAL_USE' not in s:
     s = s.replace('</application>', '</application>', 1)
     anchor = '<application'
