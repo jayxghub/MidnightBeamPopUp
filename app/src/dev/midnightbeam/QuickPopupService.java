@@ -111,12 +111,17 @@ public final class QuickPopupService extends Service {
 
     private void showPopup() {
         manager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        int width = Math.min(dp(760), getResources().getDisplayMetrics().widthPixels - dp(60));
-        int height = Math.min(dp(760), getResources().getDisplayMetrics().heightPixels - dp(45));
+        // Right-hand quick panel: approximately 28% of the screen width, with
+        // minimum D-pad-readable width for 720p televisions.
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int width = Math.min(screenWidth - dp(20),
+                Math.max(dp(310), Math.round(screenWidth * 0.28f)));
+        int height = Math.min(screenHeight - dp(20), Math.round(screenHeight * 0.91f));
         final LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(22), dp(18), dp(22), dp(20));
-        panel.setBackground(shape(BG, 18, GOLD));
+        panel.setPadding(dp(14), dp(14), dp(14), dp(12));
+        panel.setBackground(shape(BG, 15, GOLD));
 
         ScrollView root = new ScrollView(this) {
             @Override public boolean dispatchKeyEvent(KeyEvent event) {
@@ -133,21 +138,20 @@ public final class QuickPopupService extends Service {
         root.addView(panel);
 
         LinearLayout title = row();
-        title.addView(text("MIDNIGHTBEAM  /  QUICK", 20, TEXT, true),
+        title.addView(text("NIGHT CONTROLS", 17, TEXT, true),
                 new LinearLayout.LayoutParams(0, -2, 1));
         Button close = button("Close", new Runnable() {
             @Override public void run() { dismiss(); }
         });
         title.addView(close);
         panel.addView(title);
-        panel.addView(gap(14));
-        panel.addView(text("PRESETS  •  OK to apply", 14, GOLD, true));
-        HorizontalScrollView scroller = new HorizontalScrollView(this);
-        scroller.setHorizontalScrollBarEnabled(false);
-        presetBar = row();
-        scroller.addView(presetBar);
-        panel.addView(scroller);
-        panel.addView(gap(12));
+        panel.addView(gap(8));
+        panel.addView(text("PRESETS  •  OK to apply", 13, GOLD, true));
+        // Vertical preset buttons keep each choice reachable with Up/Down.
+        presetBar = new LinearLayout(this);
+        presetBar.setOrientation(LinearLayout.VERTICAL);
+        panel.addView(presetBar);
+        panel.addView(gap(6));
 
         darkText = text("Darkness", 17, TEXT, true);
         dark = addSlider(panel, darkText, 95, 35);
@@ -193,23 +197,29 @@ public final class QuickPopupService extends Service {
         edits.addView(button("Save new", new Runnable() {
             @Override public void run() { save(false); }
         }), weight(1));
-        edits.addView(button("Update / rename", new Runnable() {
+        edits.addView(button("Rename / update", new Runnable() {
             @Override public void run() { save(true); }
         }), weight(1.2f));
-        edits.addView(button("Delete", new Runnable() {
-            @Override public void run() { delete(); }
-        }), weight(.75f));
         panel.addView(edits);
 
         LinearLayout actions = row();
+        actions.addView(button("Delete preset", new Runnable() {
+            @Override public void run() { delete(); }
+        }), weight(1));
         actions.addView(button("Filter off", new Runnable() {
             @Override public void run() { switchOff(); }
         }), weight(1));
-        actions.addView(button("Apply + close", new Runnable() {
+        panel.addView(actions);
+
+        LinearLayout bottom = row();
+        bottom.addView(button("Full settings", new Runnable() {
+            @Override public void run() { openMainSettings(); }
+        }), weight(1));
+        bottom.addView(button("Apply + close", new Runnable() {
             @Override public void run() { applyValues(); dismiss(); }
         }), weight(1));
-        panel.addView(actions);
-        panel.addView(gap(8));
+        panel.addView(bottom);
+        panel.addView(gap(6));
         statusText = text("D-pad to navigate • Left/Right to adjust • Back to close", 13, MUTED, false);
         panel.addView(statusText);
 
@@ -217,7 +227,8 @@ public final class QuickPopupService extends Service {
                 width, height, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.CENTER;
+        params.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+        params.x = dp(12);
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
         window = root;
         manager.addView(window, params);
@@ -233,9 +244,14 @@ public final class QuickPopupService extends Service {
             JSONObject item = presets.optJSONObject(i);
             if (item == null) continue;
             String label = (i == chosen ? "● " : "☾ ") + item.optString("name", "Preset");
-            presetBar.addView(button(label, new Runnable() {
+            Button presetButton = button(label, new Runnable() {
                 @Override public void run() { select(index); }
-            }));
+            });
+            LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+                    -1, dp(42));
+            buttonParams.setMargins(dp(3), dp(1), dp(3), dp(1));
+            presetButton.setLayoutParams(buttonParams);
+            presetBar.addView(presetButton);
         }
     }
 
@@ -320,6 +336,19 @@ public final class QuickPopupService extends Service {
         }
     }
 
+    /** Keep the original MidnightBeam configuration accessible after Stickman
+     * launches only the Quick activity. */
+    private void openMainSettings() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(intent);
+            dismiss();
+        } catch (Exception e) {
+            message("Could not open settings");
+        }
+    }
+
     private void switchOff() {
         Intent intent = new Intent(this, DimService.class);
         intent.putExtra("off", true);
@@ -355,10 +384,10 @@ public final class QuickPopupService extends Service {
         b.setText(name);
         b.setAllCaps(false);
         b.setTextColor(TEXT);
-        b.setTextSize(14);
+        b.setTextSize(13);
         b.setFocusable(true);
         b.setBackground(shape(PANEL, 10, 0xff6e5744));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, dp(47));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, dp(42));
         lp.setMargins(dp(3), dp(3), dp(3), dp(3));
         b.setLayoutParams(lp);
         b.setOnFocusChangeListener(new View.OnFocusChangeListener() {
