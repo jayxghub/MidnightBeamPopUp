@@ -21,7 +21,9 @@ jobs:
       - name: Install SDK platform and tools
         run: |
           echo "Android SDK: $ANDROID_HOME"
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          echo "Using $SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - name: Clone MidnightBeam including submodules
         run: git clone --depth 1 --recurse-submodules https://github.com/MadeinTaly/midnightbeam.git upstream
       - name: Add floating popup to MidnightBeam
