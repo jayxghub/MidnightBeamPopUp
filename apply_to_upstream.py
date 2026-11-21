@@ -50,7 +50,7 @@ if '.QuickPopupActivity' not in s:
 # ONLY launcher for this package; the original MainActivity remains available
 # via the "Full settings" button in the popup and through explicit ADB launches.
 main_match = re.search(
-    r'<activity\\b[^>]*android:name="\\.MainActivity"[^>]*>[\\s\\S]*?</activity>',
+    r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>[\s\S]*?</activity>',
     s
 )
 if not main_match:
@@ -63,7 +63,7 @@ def remove_main_launcher(match):
              'android.intent.category.LEANBACK_LAUNCHER' in tag)):
         return ''
     return tag
-cleaned = re.sub(r'\\s*<intent-filter\\b[^>]*>[\\s\\S]*?</intent-filter>',
+cleaned = re.sub(r'\s*<intent-filter\b[^>]*>[\s\S]*?</intent-filter>',
                  remove_main_launcher, main_activity)
 if cleaned == main_activity:
     raise SystemExit('Expected MainActivity launcher intent-filter was not found')
