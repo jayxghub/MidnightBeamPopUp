@@ -1,0 +1,50 @@
+name: Build MidnightBeam Quick Popup APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "apply_to_upstream.py"
+      - ".github/workflows/build-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out addon
+        uses: actions/checkout@v4
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install SDK platform and tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Clone MidnightBeam including submodules
+        run: git clone --depth 1 --recurse-submodules https://github.com/MadeinTaly/midnightbeam.git upstream
+      - name: Add floating popup to MidnightBeam
+        run: python3 apply_to_upstream.py upstream
+      - name: Restore persistent signing key if configured
+        env:
+          QUICK_SIGNING_KEY_B64: \${{ secrets.QUICK_SIGNING_KEY_B64 }}
+        run: |
+          if [ -n "$QUICK_SIGNING_KEY_B64" ]; then
+            printf '%s' "$QUICK_SIGNING_KEY_B64" | base64 --decode > upstream/debug.keystore
+          else
+            echo "::warning::Using a new temporary signing key. Future APKs may need a reinstall."
+          fi
+      - name: Build Fire TV-compatible Android APK
+        working-directory: upstream
+        run: |
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0" \
+          ANDROID_JAR="$ANDROID_HOME/platforms/android-35/android.jar" \
+          bash ./build.sh
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MidnightBeam-Quick-Popup-APK
+          path: upstream/midnightbeam.apk
+          if-no-files-found: error
+          retention-days: 30
