@@ -28,7 +28,7 @@ jobs:
         run: python3 apply_to_upstream.py upstream
       - name: Restore persistent signing key if configured
         env:
-          QUICK_SIGNING_KEY_B64: \${{ secrets.QUICK_SIGNING_KEY_B64 }}
+          QUICK_SIGNING_KEY_B64: ${{ secrets.QUICK_SIGNING_KEY_B64 }}
         run: |
           if [ -n "$QUICK_SIGNING_KEY_B64" ]; then
             printf '%s' "$QUICK_SIGNING_KEY_B64" | base64 --decode > upstream/debug.keystore
